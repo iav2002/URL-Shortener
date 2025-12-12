@@ -2,6 +2,9 @@
 
 A lightweight, serverless URL shortener API built with Python and Flask. This project leverages Supabase for database storage and authentication, and is designed to be deployed on Vercel.
 
+currently down for renovations
+
+
 ## Tech Stack
 
 * **Language:** Python 3.9+
