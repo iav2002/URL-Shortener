@@ -4,8 +4,7 @@ A lightweight, serverless URL shortener API built with Python and Flask. This pr
 
 currently down for renovations
 
-![image]diagram.svg)
-
+![image info](./image.png)
 
 ## Tech Stack
 
