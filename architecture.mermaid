@@ -1,0 +1,27 @@
+graph TB
+    subgraph Client["Frontend (Vercel Static)"]
+        UI["HTML Form + Result Display"]
+    end
+
+    subgraph Vercel["Vercel Serverless Functions"]
+        API["Flask API (api/index.py)"]
+        RL["Rate Limiter Middleware"]
+    end
+
+    subgraph Supabase["Supabase (PostgreSQL)"]
+        DB[("urls table")]
+    end
+
+    UI -->|"POST /api/shorten"| RL
+    RL --> API
+    API -->|"INSERT / SELECT"| DB
+    DB -->|"short_code + metadata"| API
+    API -->|"JSON response"| UI
+
+    User(("User clicks short link")) -->|"GET /{short_code}"| API
+    API -->|"SELECT + UPDATE clicks"| DB
+    API -->|"302 Redirect"| Browser(("Browser → Original URL"))
+
+    style Client fill:#e8f4f8,stroke:#2196F3
+    style Vercel fill:#f3e5f5,stroke:#9C27B0
+    style Supabase fill:#e8f5e9,stroke:#4CAF50
