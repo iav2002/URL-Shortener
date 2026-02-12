@@ -5,6 +5,8 @@ from flask import Flask, jsonify, request, redirect
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+from collections import defaultdict
+import time
 
 load_dotenv()
 
@@ -14,6 +16,25 @@ app = Flask(__name__)
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
+
+
+# Simple in-memory rate limiter
+rate_limit = defaultdict(list)
+RATE_LIMIT = 10        # max requests
+RATE_WINDOW = 60       # per 60 seconds
+
+
+def is_rate_limited(ip):
+    """Check if an IP has exceeded the request limit."""
+    now = time.time()
+    # Remove old timestamps outside the window
+    rate_limit[ip] = [t for t in rate_limit[ip] if now - t < RATE_WINDOW]
+    # Check limit
+    if len(rate_limit[ip]) >= RATE_LIMIT:
+        return True
+    rate_limit[ip].append(now)
+    return False
+
 
 
 def generate_code(length=6):
@@ -36,6 +57,10 @@ def health():
 def shorten():
     """Take a long URL, generate a short code, store it."""
     data = request.get_json()
+
+    # Rate limit check
+    if is_rate_limited(request.remote_addr):
+        return jsonify({"error": "Rate limit exceeded. Try again later."}), 429
 
     if not data or not data.get("url"):
         return jsonify({"error": "Missing 'url' field"}), 400
