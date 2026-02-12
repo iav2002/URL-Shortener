@@ -4,6 +4,7 @@ import random
 from flask import Flask, jsonify, request, redirect
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
@@ -59,16 +60,42 @@ def shorten():
             "reused": True
         }), 200
 
-    # Generate unique code
-    code = generate_code()
+  # Custom alias or random code
+    custom = data.get("custom_code")
+
+    if custom:
+        # Check if custom code is already taken
+        taken = supabase.table("urls") \
+            .select("short_code") \
+            .eq("short_code", custom) \
+            .execute()
+
+        if taken.data:
+            return jsonify({"error": "Custom code already taken"}), 409
+
+        code = custom
+    else:
+        code = generate_code()
+
+
+    # Build the row to insert
+    row = {
+        "short_code": code,
+        "original_url": original_url
+    }
+
+    # Optional expiration
+    expires_in = data.get("expires_in_days")
+    if expires_in is not None:
+        expires_at = datetime.now(timezone.utc) + timedelta(days=int(expires_in))
+        row["expires_at"] = expires_at.isoformat()
+
 
     try:
-        supabase.table("urls").insert({
-            "short_code": code,
-            "original_url": original_url
-        }).execute()
+        supabase.table("urls").insert(row).execute()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 
     short_url = f"{request.host_url}{code}"
 
@@ -77,6 +104,47 @@ def shorten():
         "short_code": code,
         "reused": False
     }), 201
+
+
+@app.route("/<code>")
+def redirect_url(code):
+    """Look up a short code and redirect to the original URL."""
+    try:
+        result = supabase.table("urls") \
+            .select("original_url, expires_at") \
+            .eq("short_code", code) \
+            .single() \
+            .execute()
+    except Exception:
+        return jsonify({"error": "Short code not found"}), 404
+
+    # Check expiration
+    expires_at = result.data.get("expires_at")
+    if expires_at:
+        exp_time = datetime.fromisoformat(expires_at)
+        if datetime.now(timezone.utc) > exp_time:
+            return jsonify({"error": "This link has expired"}), 410
+
+    supabase.rpc("increment_clicks", {"code": code}).execute()
+
+    return redirect(result.data["original_url"], 302)
+
+@app.route("/api/stats/<code>")
+def stats(code):
+    """Return metadata about a short link."""
+    try:
+        result = supabase.table("urls") \
+            .select("short_code, original_url, clicks, created_at, expires_at") \
+            .eq("short_code", code) \
+            .single() \
+            .execute()
+    except Exception:
+        return jsonify({"error": "Short code not found"}), 404
+
+    return jsonify(result.data), 200
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
