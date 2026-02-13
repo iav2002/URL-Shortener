@@ -10,7 +10,7 @@ import time
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../public', static_url_path='')
 
 # Supabase connection
 url = os.getenv("SUPABASE_URL")
@@ -22,6 +22,10 @@ supabase: Client = create_client(url, key)
 rate_limit = defaultdict(list)
 RATE_LIMIT = 10        # max requests
 RATE_WINDOW = 60       # per 60 seconds
+
+@app.route("/")
+def home():
+    return app.send_static_file("index.html")
 
 
 def is_rate_limited(ip):
@@ -70,20 +74,21 @@ def shorten():
     if not original_url.startswith(("http://", "https://")):
         return jsonify({"error": "URL must start with http:// or https://"}), 400
 
-    # Check for duplicate
-    existing = supabase.table("urls") \
-        .select("short_code") \
-        .eq("original_url", original_url) \
-        .execute()
+    # Check for duplicate (skip if user wants a custom alias)
+    if not data.get("custom_code"):
+        existing = supabase.table("urls") \
+            .select("short_code") \
+            .eq("original_url", original_url) \
+            .execute()
 
-    if existing.data:
-        code = existing.data[0]["short_code"]
-        short_url = f"{request.host_url}{code}"
-        return jsonify({
-            "short_url": short_url,
-            "short_code": code,
-            "reused": True
-        }), 200
+        if existing.data:
+            code = existing.data[0]["short_code"]
+            short_url = f"{request.host_url}{code}"
+            return jsonify({
+                "short_url": short_url,
+                "short_code": code,
+                "reused": True
+            }), 200
 
   # Custom alias or random code
     custom = data.get("custom_code")
@@ -134,6 +139,10 @@ def shorten():
 @app.route("/<code>")
 def redirect_url(code):
     """Look up a short code and redirect to the original URL."""
+    # Skip static files
+    if '.' in code:
+        return app.send_static_file(code)
+
     try:
         result = supabase.table("urls") \
             .select("original_url, expires_at") \
@@ -153,6 +162,8 @@ def redirect_url(code):
     supabase.rpc("increment_clicks", {"code": code}).execute()
 
     return redirect(result.data["original_url"], 302)
+
+
 
 @app.route("/api/stats/<code>")
 def stats(code):

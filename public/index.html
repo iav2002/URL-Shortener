@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span>/</span>shorten</h1>
+            <p>Paste a long URL and get a short one. Add a custom alias or set it to expire.</p>
+        </div>
+
+        <div class="form-group">
+            <label>URL</label>
+            <input type="url" id="url-input" placeholder="https://example.com/very/long/path" autofocus>
+        </div>
+
+        <div class="options-row">
+            <div class="form-group">
+                <label>Custom alias (optional)</label>
+                <input type="text" id="alias-input" placeholder="my-link">
+            </div>
+            <div class="form-group">
+                <label>Expires in days (optional)</label>
+                <input type="number" id="expires-input" placeholder="30" min="0">
+            </div>
+        </div>
+
+        <button class="btn" id="shorten-btn" onclick="shortenUrl()">Shorten</button>
+
+        <div class="error" id="error-msg"></div>
+
+        <div class="result" id="result">
+            <div class="result-label">Your short URL</div>
+            <div class="result-url">
+                <a href="#" id="result-link" target="_blank"></a>
+                <button class="copy-btn" id="copy-btn" onclick="copyUrl()">Copy</button>
+            </div>
+            <div class="result-meta" id="result-meta"></div>
+        </div>
+    </div>
+
+    <div class="footer">Flask + Supabase + Vercel</div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
