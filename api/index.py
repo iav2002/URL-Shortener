@@ -164,7 +164,6 @@ def redirect_url(code):
     return redirect(result.data["original_url"], 302)
 
 
-
 @app.route("/api/stats/<code>")
 def stats(code):
     """Return metadata about a short link."""
