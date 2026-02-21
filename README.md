@@ -2,7 +2,7 @@
 
 A lightweight, serverless URL shortener API built with Python and Flask. This project leverages Supabase for database storage and authentication, and is designed to be deployed on Vercel.
 
-currently down for renovations
+[![Live Demo](https://img.shields.io/badge/Live_Demo-ecom.ignalarcon.dev-blue?style=for-the-badge)](https://url-shortener-cycl.vercel.app/)
 
 ![Diagram](images/diagram.svg)
 
